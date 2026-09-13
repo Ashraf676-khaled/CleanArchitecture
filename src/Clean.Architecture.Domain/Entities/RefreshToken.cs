@@ -1,14 +1,13 @@
-﻿// Domain/Entities/RefreshToken.cs
-using Clean.Architecture.Domain.Common.Abstractions;
+﻿using Clean.Architecture.Domain.Common.Abstractions;
 
 namespace Clean.Architecture.Domain.Entities;
 
 public class RefreshToken : Entity
 {
-  public Guid UserId { get; set; }         // 👈 مجرد Guid، مش Navigation لـ User Entity
-  public string Token { get; set; } = string.Empty;
-  public DateTimeOffset ExpiresUtc { get; set; }
-  public bool IsRevoked { get; set; }
+  public Guid UserId { get; private set; }
+  public string Token { get; private set; } = string.Empty;
+  public DateTimeOffset ExpiresUtc { get; private set; }
+  public bool IsRevoked { get; private set; }
 
   protected RefreshToken() { }
 
@@ -17,7 +16,19 @@ public class RefreshToken : Entity
     UserId = userId;
     Token = token;
     ExpiresUtc = expiresUtc;
+    IsRevoked = false;
   }
 
   public bool IsActive => !IsRevoked && ExpiresUtc > DateTimeOffset.UtcNow;
+
+  // سلوك الـ Rich Domain: الكلاس هو اللي بيتحكم في تغيير حالته بنفسه
+  public void Revoke()
+  {
+    if (IsRevoked)
+    {
+      throw new InvalidOperationException("Refresh token is already revoked.");
+    }
+
+    IsRevoked = true;
+  }
 }

@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Clean.Architecture.Application.Common.Interfaces;
-using Clean.Architecture.Domain.Entities;
+﻿using Clean.Architecture.Application.Common.Interfaces;
 using Clean.Architecture.Appliction.Common.Interfaces;
+using Clean.Architecture.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace Clean.Architecture.Infrastructure.Identity;
 
@@ -13,7 +14,8 @@ public class RefreshTokenService : IRefreshTokenService
 
   public async Task SaveRefreshTokenAsync(Guid userId, string token, CancellationToken ct = default)
   {
-    _context.RefreshTokens.Add(new RefreshToken(userId, token, DateTimeOffset.UtcNow.AddDays(7)));
+    var refreshToken = new RefreshToken(userId, token, DateTimeOffset.UtcNow.AddDays(7));
+    _context.RefreshTokens.Add(refreshToken);
     await _context.SaveChangesAsync(ct);
   }
 
@@ -25,7 +27,11 @@ public class RefreshTokenService : IRefreshTokenService
   {
     var entity = await _context.RefreshTokens
         .FirstOrDefaultAsync(r => r.UserId == userId && r.Token == token, ct);
-    if (entity is not null) entity.IsRevoked = true;
-    await _context.SaveChangesAsync(ct);
+
+    if (entity is not null)
+    {
+      entity.Revoke(); // استدعاء دالة الـ Domain مباشرة من الكيان
+      await _context.SaveChangesAsync(ct);
+    }
   }
 }
